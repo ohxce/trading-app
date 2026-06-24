@@ -14,6 +14,7 @@ from plotly.subplots import make_subplots
 from modules.stock_data import get_price_data, get_indicators, get_quote, get_stock_name
 from modules.news import get_news, get_market_news
 from modules.ai_advisor import get_advice
+from modules.recommender import get_recommendations
 
 @st.cache_data(ttl=300)
 def cached_price_data(symbol, interval, outputsize):
@@ -76,7 +77,7 @@ with st.sidebar:
 # ---- メインエリア ----
 st.title("📈 株トレードアシスタント")
 
-tab1, tab2, tab3 = st.tabs(["チャート & テクニカル", "世界情勢ニュース", "AIアドバイス"])
+tab1, tab2, tab3, tab4 = st.tabs(["チャート & テクニカル", "世界情勢ニュース", "AIアドバイス", "今日のおすすめ銘柄"])
 
 # ===== Tab1: チャート =====
 with tab1:
@@ -207,6 +208,19 @@ with tab2:
                     st.markdown(f"[記事を読む]({a.get('url','')})")
         else:
             st.info("キーワードを入力して検索するか、「世界市場ニュース取得」ボタンを押してください。")
+
+# ===== Tab4: おすすめ銘柄 =====
+with tab4:
+    st.subheader("🎯 今日のおすすめ銘柄")
+    st.caption("日米16銘柄の値動き・RSI・最新ニュースをAIが一括分析してトップ3を選定します")
+
+    if st.button("今日のおすすめを分析する", type="primary"):
+        with st.spinner("日米16銘柄を分析中... (20〜40秒かかります)"):
+            try:
+                result = get_recommendations()
+                st.markdown(result)
+            except Exception as e:
+                st.error(f"エラーが発生しました: {e}")
 
 # ===== Tab3: AIアドバイス =====
 with tab3:
