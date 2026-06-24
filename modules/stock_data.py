@@ -33,14 +33,16 @@ def _price_yf(symbol: str, interval: str, outputsize: int) -> pd.DataFrame:
         "Open": "open", "High": "high", "Low": "low",
         "Close": "close", "Volume": "volume",
     })
-    df["datetime"] = pd.to_datetime(df["datetime"]).dt.tz_localize(None)
+    df["datetime"] = pd.to_datetime(df["datetime"])
+    if df["datetime"].dt.tz is not None:
+        df["datetime"] = df["datetime"].dt.tz_convert(None)
     for col in ["open", "high", "low", "close", "volume"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     return df.sort_values("datetime").tail(outputsize).reset_index(drop=True)
 
 
 def _quote_yf(symbol: str) -> dict:
-    hist = yf.Ticker(_yf_symbol(symbol)).history(period="5d")
+    hist = yf.Ticker(_yf_symbol(symbol)).history(period="1mo")
     if len(hist) < 2:
         raise ValueError(f"{symbol} のデータが取得できません")
     prev = hist["Close"].iloc[-2]
