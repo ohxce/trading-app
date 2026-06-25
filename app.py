@@ -91,7 +91,7 @@ with tab1:
             except Exception as e:
                 st.error(f"データ取得エラー: {e}")
 
-    if df is not None and quote is not None and indicators is not None:
+    if df is not None and len(df) > 0 and quote is not None and indicators is not None:
         # 現在値サマリー
         price = float(quote.get("close", 0))
         change = float(quote.get("change", 0))
@@ -143,7 +143,6 @@ with tab1:
             upper = float(bb_val["upper_band"])
             middle = float(bb_val["middle_band"])
             lower = float(bb_val["lower_band"])
-            last_dt = df["datetime"].iloc[-1]
             for band, name, color in [(upper, "BB上限", "rgba(100,149,237,0.5)"),
                                        (middle, "BB中央", "rgba(100,149,237,0.8)"),
                                        (lower, "BB下限", "rgba(100,149,237,0.5)")]:
