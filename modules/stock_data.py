@@ -148,33 +148,20 @@ def _indicators_td(symbol: str, interval: str) -> dict:
 # ---- 公開インターフェース ----
 
 def get_stock_name(symbol: str) -> str:
-    """銘柄名を取得する。取得できない場合はシンボルをそのまま返す"""
     try:
-        if is_japanese(symbol):
-            info = yf.Ticker(_yf_symbol(symbol)).info
-            return info.get("shortName") or info.get("longName") or symbol
-        else:
-            res = requests.get(f"{BASE_URL}/quote", params={"symbol": symbol, "apikey": API_KEY}, timeout=10)
-            data = res.json()
-            return data.get("name") or symbol
+        info = yf.Ticker(_yf_symbol(symbol)).info
+        return info.get("shortName") or info.get("longName") or symbol
     except Exception:
         return symbol
 
 
-
 def get_price_data(symbol: str, interval: str = "1day", outputsize: int = 90) -> pd.DataFrame:
-    if is_japanese(symbol):
-        return _price_yf(symbol, interval, outputsize)
-    return _price_td(symbol, interval, outputsize)
+    return _price_yf(symbol, interval, outputsize)
 
 
 def get_quote(symbol: str) -> dict:
-    if is_japanese(symbol):
-        return _quote_yf(symbol)
-    return _quote_td(symbol)
+    return _quote_yf(symbol)
 
 
 def get_indicators(symbol: str, interval: str = "1day") -> dict:
-    if is_japanese(symbol):
-        return _indicators_yf(symbol, interval)
-    return _indicators_td(symbol, interval)
+    return _indicators_yf(symbol, interval)
