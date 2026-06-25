@@ -216,7 +216,7 @@ with tab4:
     st.caption("日米16銘柄の値動き・RSI・最新ニュースをAIが一括分析してトップ3を選定します")
 
     if st.button("今日のおすすめを分析する", type="primary"):
-        with st.spinner("日米16銘柄を分析中... (20〜40秒かかります)"):
+        with st.spinner("日米約150銘柄を一括分析中... (30〜60秒かかります)"):
             try:
                 result = get_recommendations()
                 st.markdown(result)
