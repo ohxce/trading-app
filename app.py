@@ -18,6 +18,7 @@ from modules.news import get_news, get_market_news
 from modules.ai_advisor import get_advice
 from modules.recommender import get_recommendations
 from modules.search import search_stocks
+from modules.db import load_watchlist, add_symbol, remove_symbol
 
 @st.cache_data(ttl=300)
 def cached_price_data(symbol, interval, outputsize):
@@ -58,9 +59,29 @@ MARKET_HOURS = [
 
 st.set_page_config(page_title="株トレードアシスタント", page_icon="📈", layout="wide")
 
-# ---- ウォッチリスト初期化 ----
+# ---- ログイン ----
+if not st.session_state.get("logged_in"):
+    st.title("🔐 株トレードアシスタント")
+    with st.form("login_form"):
+        pw = st.text_input("パスワード", type="password")
+        if st.form_submit_button("ログイン", type="primary"):
+            if pw == os.getenv("APP_PASSWORD", ""):
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("パスワードが違います")
+    st.stop()
+
+# ---- ウォッチリスト初期化（DBから読み込み） ----
 if "watchlist" not in st.session_state:
-    st.session_state.watchlist = ["AAPL", "7203", "NVDA", "9984"]
+    loaded = load_watchlist()
+    if loaded:
+        st.session_state.watchlist = loaded
+    else:
+        default = ["AAPL", "7203", "NVDA", "9984"]
+        for sym in default:
+            add_symbol(sym)
+        st.session_state.watchlist = default
 
 # ---- サイドバー ----
 with st.sidebar:
@@ -70,6 +91,7 @@ with st.sidebar:
         new_symbol = st.text_input("銘柄追加（例: TSLA, 6758）").upper().strip()
         if st.form_submit_button("追加") and new_symbol:
             if new_symbol not in st.session_state.watchlist:
+                add_symbol(new_symbol)
                 st.session_state.watchlist.append(new_symbol)
 
     for sym in st.session_state.watchlist:
@@ -77,6 +99,7 @@ with st.sidebar:
         name = cached_stock_name(sym)
         col1.write(f"**{sym}**  \n{name}")
         if col2.button("✕", key=f"del_{sym}"):
+            remove_symbol(sym)
             st.session_state.watchlist.remove(sym)
             st.rerun()
 
@@ -340,5 +363,6 @@ with tab5:
                     st.success("ウォッチリスト済み")
                 else:
                     if st.button("＋ ウォッチリストに追加", key=f"add_{r['symbol']}", type="primary"):
+                        add_symbol(r["symbol"])
                         st.session_state.watchlist.append(r["symbol"])
                         st.rerun()
