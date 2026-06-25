@@ -13,6 +13,50 @@ BASE_URL = "https://api.twelvedata.com"
 INTERVAL_MAP = {"1day": "1d", "4h": "1h", "1h": "1h", "30min": "30m", "15min": "15m"}
 PERIOD_MAP = {30: "3mo", 90: "6mo", 200: "1y"}
 
+_NAME_DB = {
+    # 日本株
+    "7203": "トヨタ自動車", "9984": "ソフトバンクG", "6758": "ソニーグループ",
+    "8306": "三菱UFJフィナンシャル", "6861": "キーエンス", "7974": "任天堂",
+    "9432": "NTT", "6098": "リクルートHD", "4063": "信越化学工業",
+    "6367": "ダイキン工業", "8035": "東京エレクトロン", "9983": "ファーストリテイリング",
+    "4519": "中外製薬", "6501": "日立製作所", "6702": "富士通",
+    "7751": "キヤノン", "4661": "オリエンタルランド", "2802": "味の素",
+    "7267": "本田技研工業", "8411": "みずほフィナンシャル", "9022": "JR東海",
+    "6594": "日本電産", "4543": "テルモ", "2914": "日本たばこ産業",
+    "6920": "レーザーテック", "7011": "三菱重工業", "8058": "三菱商事",
+    "8031": "三井物産", "8053": "住友商事", "8001": "伊藤忠商事",
+    "6326": "クボタ", "6954": "ファナック", "4568": "第一三共",
+    "4523": "エーザイ", "4755": "楽天グループ", "3382": "セブン&アイHD",
+    "8267": "イオン", "9020": "JR東日本", "9107": "川崎汽船",
+    "9101": "日本郵船", "9104": "商船三井", "7832": "バンダイナムコ",
+    "9613": "NTTデータ", "2413": "エムスリー", "4689": "LINEヤフー",
+    "6645": "オムロン", "6971": "京セラ", "5401": "日本製鉄",
+    "4901": "富士フイルム", "6503": "三菱電機", "8316": "三井住友FG",
+    "9433": "KDDI", "9434": "ソフトバンク", "4502": "武田薬品",
+    "7013": "IHI", "7012": "川崎重工", "5713": "住友金属鉱山",
+    "3402": "東レ", "9602": "東宝", "7261": "マツダ", "7269": "スズキ",
+    "6301": "小松製作所", "7733": "オリンパス", "6752": "パナソニック",
+    "6506": "安川電機", "3092": "ZOZO", "4385": "メルカリ",
+    "3659": "ネクソン", "6036": "KeePer技研",
+    # 米国株
+    "AAPL": "Apple", "MSFT": "Microsoft", "NVDA": "NVIDIA",
+    "AMZN": "Amazon", "META": "Meta", "GOOGL": "Google",
+    "TSLA": "Tesla", "AMD": "AMD", "PLTR": "Palantir",
+    "NFLX": "Netflix", "CRM": "Salesforce", "ORCL": "Oracle",
+    "NOW": "ServiceNow", "SNOW": "Snowflake", "UBER": "Uber",
+    "COIN": "Coinbase", "MSTR": "MicroStrategy", "ARM": "ARM",
+    "SMCI": "SuperMicro", "SHOP": "Shopify", "ABNB": "Airbnb",
+    "PYPL": "PayPal", "V": "Visa", "JPM": "JPMorgan",
+    "DIS": "Disney", "INTC": "Intel", "SPOT": "Spotify",
+    "RKLB": "Rocket Lab", "LUNR": "Intuitive Machines",
+    "TSM": "TSMC", "ASML": "ASML", "BABA": "Alibaba",
+    "NIO": "NIO", "XPEV": "Xpeng", "RIVN": "Rivian",
+    "F": "Ford", "GM": "GM", "BA": "Boeing",
+    "LMT": "Lockheed Martin", "RTX": "Raytheon",
+    "GE": "GE Aerospace", "CAT": "Caterpillar", "XOM": "ExxonMobil",
+    "CVX": "Chevron", "GOLD": "Barrick Gold",
+}
+
 
 def is_japanese(symbol: str) -> bool:
     return symbol.replace(".T", "").isdigit()
@@ -150,10 +194,8 @@ def _indicators_td(symbol: str, interval: str) -> dict:
 # ---- 公開インターフェース ----
 
 def get_stock_name(symbol: str) -> str:
-    from modules.search import STOCK_DB
-    for s in STOCK_DB:
-        if s["symbol"] == symbol:
-            return s["name"]
+    if symbol in _NAME_DB:
+        return _NAME_DB[symbol]
     try:
         info = yf.Ticker(_yf_symbol(symbol)).info
         return info.get("shortName") or info.get("longName") or symbol
