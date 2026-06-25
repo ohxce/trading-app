@@ -19,7 +19,9 @@ def is_japanese(symbol: str) -> bool:
 
 
 def _yf_symbol(symbol: str) -> str:
-    return symbol if symbol.endswith(".T") else f"{symbol}.T"
+    if symbol.endswith(".T"):
+        return symbol
+    return f"{symbol}.T" if is_japanese(symbol) else symbol
 
 
 # ---- 日本株（yfinance） ----
