@@ -45,6 +45,7 @@ STOCK_DB = [
     {"symbol": "9613", "name": "NTTデータ", "name_en": "NTT Data", "market": "日本株", "sector": "IT"},
     {"symbol": "2413", "name": "エムスリー", "name_en": "M3 Inc", "market": "日本株", "sector": "医療IT"},
     {"symbol": "4689", "name": "LINEヤフー", "name_en": "LY Corporation", "market": "日本株", "sector": "IT"},
+    {"symbol": "6503", "name": "三菱電機", "name_en": "Mitsubishi Electric", "market": "日本株", "sector": "電機"},
     {"symbol": "6645", "name": "オムロン", "name_en": "Omron", "market": "日本株", "sector": "電子部品"},
     {"symbol": "6971", "name": "京セラ", "name_en": "Kyocera", "market": "日本株", "sector": "電子部品"},
     {"symbol": "5401", "name": "日本製鉄", "name_en": "Nippon Steel", "market": "日本株", "sector": "鉄鋼"},

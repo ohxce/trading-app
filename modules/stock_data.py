@@ -150,6 +150,10 @@ def _indicators_td(symbol: str, interval: str) -> dict:
 # ---- 公開インターフェース ----
 
 def get_stock_name(symbol: str) -> str:
+    from modules.search import STOCK_DB
+    for s in STOCK_DB:
+        if s["symbol"] == symbol:
+            return s["name"]
     try:
         info = yf.Ticker(_yf_symbol(symbol)).info
         return info.get("shortName") or info.get("longName") or symbol
