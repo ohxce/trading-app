@@ -167,3 +167,19 @@ def get_quote(symbol: str) -> dict:
 
 def get_indicators(symbol: str, interval: str = "1day") -> dict:
     return _indicators_yf(symbol, interval)
+
+
+def get_market_indices() -> list[dict]:
+    tickers = {"S&P500": "^GSPC", "NIKKEI225": "^N225"}
+    results = []
+    for name, sym in tickers.items():
+        try:
+            hist = yf.Ticker(sym).history(period="2d")
+            if len(hist) >= 2:
+                prev = float(hist["Close"].iloc[-2])
+                curr = float(hist["Close"].iloc[-1])
+                change_pct = (curr - prev) / prev * 100
+                results.append({"name": name, "price": curr, "change_pct": change_pct})
+        except Exception:
+            pass
+    return results

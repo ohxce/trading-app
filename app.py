@@ -1,5 +1,7 @@
 import os
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import streamlit as st
 import pandas as pd
 
@@ -11,7 +13,7 @@ except Exception:
     pass
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from modules.stock_data import get_price_data, get_indicators, get_quote, get_stock_name
+from modules.stock_data import get_price_data, get_indicators, get_quote, get_stock_name, get_market_indices
 from modules.news import get_news, get_market_news
 from modules.ai_advisor import get_advice
 from modules.recommender import get_recommendations
@@ -42,6 +44,17 @@ def cached_market_news(days):
 @st.cache_data(ttl=3600)
 def cached_stock_name(symbol):
     return get_stock_name(symbol)
+
+@st.cache_data(ttl=60)
+def cached_market_indices():
+    return get_market_indices()
+
+MARKET_HOURS = [
+    ("🗽 NEW YORK", "America/New_York", (9, 30), (16, 0)),
+    ("🇬🇧 LONDON", "Europe/London", (8, 0), (16, 30)),
+    ("🗼 TOKYO", "Asia/Tokyo", (9, 0), (15, 30)),
+    ("🇨🇳 SHANGHAI", "Asia/Shanghai", (9, 30), (15, 0)),
+]
 
 st.set_page_config(page_title="株トレードアシスタント", page_icon="📈", layout="wide")
 
@@ -77,6 +90,28 @@ with st.sidebar:
 
 # ---- メインエリア ----
 st.title("📈 株トレードアシスタント")
+
+# ---- 市場時計 ----
+clock_cols = st.columns(4)
+for i, (name, tz, open_h, close_h) in enumerate(MARKET_HOURS):
+    now = datetime.now(ZoneInfo(tz))
+    mins = now.hour * 60 + now.minute
+    is_open = now.weekday() < 5 and (open_h[0]*60+open_h[1]) <= mins < (close_h[0]*60+close_h[1])
+    status = "🟢 OPEN" if is_open else "🔴 CLOSED"
+    clock_cols[i].metric(name, now.strftime("%H:%M"), status)
+
+# ---- 主要指数 ----
+idx_cols = st.columns(2)
+try:
+    indices = cached_market_indices()
+    for i, idx in enumerate(indices):
+        arrow = "▲" if idx["change_pct"] >= 0 else "▼"
+        color_label = f"{arrow} {idx['change_pct']:+.2f}%"
+        idx_cols[i].metric(idx["name"], f"{idx['price']:,.2f}", color_label)
+except Exception:
+    pass
+
+st.divider()
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["チャート & テクニカル", "世界情勢ニュース", "AIアドバイス", "今日のおすすめ銘柄", "🔍 銘柄検索"])
 
@@ -213,13 +248,19 @@ with tab2:
 # ===== Tab4: おすすめ銘柄 =====
 with tab4:
     st.subheader("🎯 今日のおすすめ銘柄")
-    st.caption("日米16銘柄の値動き・RSI・最新ニュースをAIが一括分析してトップ3を選定します")
+    st.caption("日米約150銘柄の値動き・RSI・最新ニュースをAIが一括分析します")
 
     if st.button("今日のおすすめを分析する", type="primary"):
         with st.spinner("日米約150銘柄を一括分析中... (30〜60秒かかります)"):
             try:
                 result = get_recommendations()
-                st.markdown(result)
+                col_buy, col_sell = st.columns(2)
+                with col_buy:
+                    st.markdown("### 📈 今日買うべき株")
+                    st.markdown(result["buy"])
+                with col_sell:
+                    st.markdown("### 📉 今日売るべき株")
+                    st.markdown(result["sell"])
             except Exception as e:
                 st.error(f"エラーが発生しました: {e}")
 

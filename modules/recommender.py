@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 import yfinance as yf
 from modules.news import get_market_news
@@ -114,6 +115,7 @@ def get_recommendations() -> str:
     top_gainers = sorted(all_results, key=lambda x: x["change_pct"], reverse=True)[:20]
     top_losers = sorted(all_results, key=lambda x: x["change_pct"])[:5]
     oversold = [s for s in all_results if s.get("rsi") and s["rsi"] < 35][:5]
+    overbought = [s for s in all_results if s.get("rsi") and s["rsi"] > 70][:5]
 
     def fmt(stocks):
         return "\n".join(
@@ -123,7 +125,8 @@ def get_recommendations() -> str:
         )
 
     prompt = f"""あなたはプロのトレーダー兼アナリストです。
-日本株・米国株あわせて約150銘柄のデータとニュースを分析し、今日注目すべき銘柄トップ5を選んでください。
+日本株・米国株あわせて約150銘柄のデータとニュースを分析し、
+「今日買うべき銘柄TOP3」と「今日売るべき銘柄TOP2」を選んでください。
 
 ## 上昇率トップ20
 {fmt(top_gainers)}
@@ -131,19 +134,35 @@ def get_recommendations() -> str:
 ## 下落率トップ5
 {fmt(top_losers)}
 
-## 売られすぎ銘柄（RSI<35）
+## 売られすぎ銘柄（RSI<35、買いチャンス候補）
 {fmt(oversold) if oversold else "なし"}
+
+## 買われすぎ銘柄（RSI>70、売り候補）
+{fmt(overbought) if overbought else "なし"}
 
 ## 本日の市場ニュース
 {news_text if news_text else "ニュースなし"}
 
-## 出力形式
-### 🥇 第1位: 銘柄名（コード）[市場]
+以下のマーカーを必ず使って出力してください：
+
+===BUY_START===
+### 🥇 買い第1位: 銘柄名（コード）[市場]
 **推薦理由**: 具体的に
-**戦略**: エントリータイミング・目標
+**戦略**: エントリー・目標・損切り
 **注意点**: リスク
 
-（第2位〜第5位も同様）
+### 🥈 買い第2位: ...
+
+### 🥉 買い第3位: ...
+===BUY_END===
+
+===SELL_START===
+### 🥇 売り第1位: 銘柄名（コード）[市場]
+**理由**: 下落・リスクの根拠
+**対応**: 手仕舞いタイミング
+
+### 🥈 売り第2位: ...
+===SELL_END===
 
 ⚠️ これは参考情報です。投資判断は自己責任でお願いします。"""
 
@@ -152,4 +171,10 @@ def get_recommendations() -> str:
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
-    return message.content[0].text
+    text = message.content[0].text
+    buy_match = re.search(r'===BUY_START===(.*?)===BUY_END===', text, re.DOTALL)
+    sell_match = re.search(r'===SELL_START===(.*?)===SELL_END===', text, re.DOTALL)
+    return {
+        "buy": buy_match.group(1).strip() if buy_match else text,
+        "sell": sell_match.group(1).strip() if sell_match else "",
+    }
