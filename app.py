@@ -15,6 +15,7 @@ from modules.stock_data import get_price_data, get_indicators, get_quote, get_st
 from modules.news import get_news, get_market_news
 from modules.ai_advisor import get_advice
 from modules.recommender import get_recommendations
+from modules.search import search_stocks
 
 @st.cache_data(ttl=300)
 def cached_price_data(symbol, interval, outputsize):
@@ -77,7 +78,7 @@ with st.sidebar:
 # ---- メインエリア ----
 st.title("📈 株トレードアシスタント")
 
-tab1, tab2, tab3, tab4 = st.tabs(["チャート & テクニカル", "世界情勢ニュース", "AIアドバイス", "今日のおすすめ銘柄"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["チャート & テクニカル", "世界情勢ニュース", "AIアドバイス", "今日のおすすめ銘柄", "🔍 銘柄検索"])
 
 # ===== Tab1: チャート =====
 with tab1:
@@ -242,3 +243,61 @@ with tab3:
                 st.caption("⚠️ このアドバイスは参考情報です。投資判断は自己責任でお願いします。")
             except Exception as e:
                 st.error(f"エラーが発生しました: {e}")
+
+# ===== Tab5: 銘柄検索 =====
+with tab5:
+    st.subheader("🔍 銘柄を探す")
+    st.caption("銘柄名・コード・セクターで検索できます（例: トヨタ, NVIDIA, 半導体）")
+
+    search_query = st.text_input("検索キーワード", placeholder="例: トヨタ, Apple, 9984, 半導体")
+    results = search_stocks(search_query) if search_query else []
+
+    if search_query and not results:
+        st.info("該当する銘柄が見つかりませんでした")
+
+    for r in results:
+        with st.expander(f"**{r['symbol']}** {r['name']}　[{r['market']} / {r['sector']}]", expanded=False):
+            col_chart, col_info = st.columns([3, 1])
+
+            with col_chart:
+                try:
+                    preview_df = get_price_data(r["symbol"], "1day", 30)
+                    if len(preview_df) > 0:
+                        fig_preview = go.Figure(go.Scatter(
+                            x=preview_df["datetime"], y=preview_df["close"],
+                            mode="lines", line=dict(color="#26a69a", width=2),
+                            fill="tozeroy", fillcolor="rgba(38,166,154,0.1)",
+                        ))
+                        fig_preview.update_layout(
+                            height=180, margin=dict(l=0, r=0, t=0, b=0),
+                            template="plotly_dark", showlegend=False,
+                            xaxis=dict(showgrid=False), yaxis=dict(showgrid=False),
+                        )
+                        st.plotly_chart(fig_preview, use_container_width=True)
+                except Exception:
+                    st.write("チャート取得できませんでした")
+
+                try:
+                    news_list = get_news(r["name_en"], days=3, language="all")[:3]
+                    for article in news_list:
+                        st.markdown(f"- [{article.get('title','')}]({article.get('url','')})")
+                except Exception:
+                    pass
+
+            with col_info:
+                try:
+                    q = get_quote(r["symbol"])
+                    price = float(q.get("close", 0))
+                    pct = float(q.get("percent_change", 0))
+                    color = "🟢" if pct >= 0 else "🔴"
+                    st.metric("現在値", f"{price:,.2f}", f"{pct:+.2f}%")
+                except Exception:
+                    pass
+
+                already_in = r["symbol"] in st.session_state.watchlist
+                if already_in:
+                    st.success("ウォッチリスト済み")
+                else:
+                    if st.button("＋ ウォッチリストに追加", key=f"add_{r['symbol']}", type="primary"):
+                        st.session_state.watchlist.append(r["symbol"])
+                        st.rerun()
